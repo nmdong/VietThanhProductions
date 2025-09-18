@@ -1,0 +1,9 @@
+Flask==2.3.3
+flasgger==0.9.7.1
+pyodbc==4.0.35
+python-dotenv==1.0.1
+marshmallow==3.21.1
+apispec==6.3.0
+apispec-webframeworks==0.5.2
+PyYAML==6.0.2
+pywin32==306    # chỉ nếu bạn muốn script tạo .mdb tự động (Windows)
