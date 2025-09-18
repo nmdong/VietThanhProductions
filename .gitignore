@@ -1,0 +1,41 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Python / Flask
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+.venv/
+.env
+
+# Flask logs
+*.log
+instance/
+
+# Node / React / React Native
+node_modules/
+npm-debug.log*
+yarn-error.log*
+build/
+dist/
+.expo/
+.expo-shared/
+
+# React Native specific
+ios/Pods/
+android/.gradle/
+android/app/build/
+*.keystore
+*.jks
+
+# Env files (all frontend + backend)
+.env
+.env.*.local
+.env.local
+
+# IDE
+.vscode/
+.idea/
