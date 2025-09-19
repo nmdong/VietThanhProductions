@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "lock-keyhole.pdf",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
