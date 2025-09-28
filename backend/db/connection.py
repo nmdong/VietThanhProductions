@@ -1,12 +1,13 @@
 import pyodbc
 from config import Config
 
-# Driver cho .mdb (Access 2003)
-CONN_STR = (
-    r"Driver={Microsoft Access Driver (*.mdb)};"
-    f"DBQ={Config.DB_PATH};"
-)
+def _driver_for_path(path: str) -> str:
+    p = path.lower()
+    if p.endswith(".accdb"):
+        return "Microsoft Access Driver (*.mdb, *.accdb)"
+    return "Microsoft Access Driver (*.mdb)"
 
 def get_conn():
-    # mở mới mỗi lần gọi (simple)
-    return pyodbc.connect(CONN_STR, autocommit=False)
+    driver = _driver_for_path(Config.DB_PATH)
+    conn_str = rf"Driver={{{driver}}};DBQ={Config.DB_PATH};"
+    return pyodbc.connect(conn_str, autocommit=False)

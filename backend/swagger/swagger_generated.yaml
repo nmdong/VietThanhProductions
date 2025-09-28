@@ -1,339 +1,105 @@
-definitions:
-  Order:
-    properties:
-      id:
-        readOnly: true
-        type: integer
-      product_id:
-        type: integer
-      quantity:
-        type: integer
-      total_price:
-        readOnly: true
-        type: number
-    required:
-    - product_id
-    - quantity
-    type: object
-  OrderInput:
-    properties:
-      product_id:
-        type: integer
-      quantity:
-        type: integer
-      total_price:
-        readOnly: true
-        type: number
-    required:
-    - product_id
-    - quantity
-    type: object
-  Product:
-    properties:
-      id:
-        readOnly: true
-        type: integer
-      name:
-        type: string
-      price:
-        type: number
-      stock:
-        type: integer
-    required:
-    - name
-    - price
-    - stock
-    type: object
-  ProductInput:
-    properties:
-      name:
-        type: string
-      price:
-        type: number
-      stock:
-        type: integer
-    required:
-    - name
-    - price
-    - stock
-    type: object
-  User:
-    properties:
-      age:
-        description: Tuổi
-        type: integer
-      email:
-        description: Email
-        format: email
-        type: string
-      id:
-        readOnly: true
-        type: integer
-      name:
-        description: Tên người dùng
-        type: string
-    required:
-    - age
-    - email
-    - name
-    type: object
-  UserInput:
-    properties:
-      age:
-        description: Tuổi
-        type: integer
-      email:
-        description: Email
-        format: email
-        type: string
-      name:
-        description: Tên người dùng
-        type: string
-    required:
-    - age
-    - email
-    - name
-    type: object
+swagger: '2.0'
 info:
-  description: Auto-generated CRUD spec from Marshmallow schemas
   title: Access Backend API
   version: 1.0.0
+
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'"
+
+security:
+  - Bearer: []
+
 paths:
-  /orders:
-    get:
+  /auth/login:
+    post:
+      summary: Login to get JWT token
+      tags:
+        - Auth
+      parameters:
+        - in: body
+          name: credentials
+          required: true
+          schema:
+            type: object
+            required:
+              - username
+              - password
+            properties:
+              username:
+                type: string
+              password:
+                type: string
       responses:
         '200':
-          description: Danh sách Order
-          schema:
-            items:
-              $ref: '#/definitions/Order'
-            type: array
-      summary: Lấy tất cả Order
-      tags:
-      - Order
+          description: JWT token returned
+        '401':
+          description: Unauthorized
+
+  /auth/logout_access:
     post:
+      summary: Logout (revoke access token)
+      tags:
+        - Auth
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Logged out
+
+  /auth/me:
+    get:
+      summary: Get current user info
+      tags:
+        - Auth
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: User info returned
+        '401':
+          description: Unauthorized or invalid token
+        '404':
+          description: User not found
+
+  /auth/refresh:
+    post:
+      summary: Refresh JWT token
+      tags:
+        - Auth
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: New token
+
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Auth
       parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/OrderInput'
+        - in: body
+          name: user
+          required: true
+          schema:
+            type: object
+            required:
+              - username
+              - email
+              - password
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+              password:
+                type: string
       responses:
         '201':
-          description: Order đã tạo
-          schema:
-            $ref: '#/definitions/Order'
-      summary: Tạo Order
-      tags:
-      - Order
-  /orders/{id}:
-    delete:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        '200':
-          description: Order deleted
-        '404':
-          description: Not found
-      summary: Xóa Order
-      tags:
-      - Order
-    get:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        '200':
-          description: Order
-          schema:
-            $ref: '#/definitions/Order'
-        '404':
-          description: Not found
-      summary: Lấy Order theo ID
-      tags:
-      - Order
-    put:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      - in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/OrderInput'
-      responses:
-        '200':
-          description: Order updated
-          schema:
-            $ref: '#/definitions/Order'
-        '404':
-          description: Not found
-      summary: Cập nhật Order
-      tags:
-      - Order
-  /products:
-    get:
-      responses:
-        '200':
-          description: Danh sách Product
-          schema:
-            items:
-              $ref: '#/definitions/Product'
-            type: array
-      summary: Lấy tất cả Product
-      tags:
-      - Product
-    post:
-      parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/ProductInput'
-      responses:
-        '201':
-          description: Product đã tạo
-          schema:
-            $ref: '#/definitions/Product'
-      summary: Tạo Product
-      tags:
-      - Product
-  /products/{id}:
-    delete:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        '200':
-          description: Product deleted
-        '404':
-          description: Not found
-      summary: Xóa Product
-      tags:
-      - Product
-    get:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        '200':
-          description: Product
-          schema:
-            $ref: '#/definitions/Product'
-        '404':
-          description: Not found
-      summary: Lấy Product theo ID
-      tags:
-      - Product
-    put:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      - in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/ProductInput'
-      responses:
-        '200':
-          description: Product updated
-          schema:
-            $ref: '#/definitions/Product'
-        '404':
-          description: Not found
-      summary: Cập nhật Product
-      tags:
-      - Product
-  /users:
-    get:
-      responses:
-        '200':
-          description: Danh sách User
-          schema:
-            items:
-              $ref: '#/definitions/User'
-            type: array
-      summary: Lấy tất cả User
-      tags:
-      - User
-    post:
-      parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/UserInput'
-      responses:
-        '201':
-          description: User đã tạo
-          schema:
-            $ref: '#/definitions/User'
-      summary: Tạo User
-      tags:
-      - User
-  /users/{id}:
-    delete:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        '200':
-          description: User deleted
-        '404':
-          description: Not found
-      summary: Xóa User
-      tags:
-      - User
-    get:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        '200':
-          description: User
-          schema:
-            $ref: '#/definitions/User'
-        '404':
-          description: Not found
-      summary: Lấy User theo ID
-      tags:
-      - User
-    put:
-      parameters:
-      - in: path
-        name: id
-        required: true
-        type: integer
-      - in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/UserInput'
-      responses:
-        '200':
-          description: User updated
-          schema:
-            $ref: '#/definitions/User'
-        '404':
-          description: Not found
-      summary: Cập nhật User
-      tags:
-      - User
-swagger: '2.0'
+          description: User successfully registered
+        '400':
+          description: Bad request, e.g., user exists or invalid data
