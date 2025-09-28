@@ -24,7 +24,8 @@ from db.dao_products import (
     get_product_by_id,
     get_all_products,
     update_product,
-    delete_product
+    delete_product,
+    advanced_search
 )
 
 products_bp = Blueprint("products", __name__, url_prefix="/products")
@@ -289,3 +290,102 @@ def delete(product_id):
         return success_response({"deleted": True})
     except Exception as e:
         return error_response("DELETE_FAILED", str(e), None, 500)
+
+"""
+{
+  "action": "advanced_search",
+  "data": {
+    "keyword": "tablet",
+    "category": "Electronics",
+    "min_price": 300,
+    "max_price": 800,
+    "in_stock": true,
+    "color": "black",
+    "material": "plastic"
+  },
+  "meta": {
+    "requestId": "req-adv-001"
+  }
+}
+"""
+@products_bp.route("/search/advanced", methods=["POST"])
+@jwt_required()
+def search_advanced():
+    """
+    POST /products/search/advanced
+    ---
+    tags:
+      - Products
+    summary: Advanced search products
+    description: Search products with multiple optional filters (keyword, category, price range, stock, color, material).
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [action, data]
+            properties:
+              action:
+                type: string
+                enum: [advanced_search]
+              data:
+                type: object
+                properties:
+                  keyword: { type: string }
+                  category: { type: string }
+                  min_price: { type: number }
+                  max_price: { type: number }
+                  in_stock: { type: boolean }
+                  color: { type: string }
+                  material: { type: string }
+              meta:
+                type: object
+          example:
+            action: advanced_search
+            data:
+              keyword: "tablet"
+              category: "Electronics"
+              min_price: 300
+              max_price: 800
+              in_stock: true
+              color: "black"
+              material: "plastic"
+            meta:
+              requestId: "req-adv-001"
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Search results
+        content:
+          application/json:
+            example:
+              status: success
+              data:
+                - id: 12
+                  code: "PRD-0012"
+                  name: "Tablet Pro"
+                  category: "Electronics"
+                  price: 650.0
+                  stock: 20
+              meta:
+                requestId: "req-adv-001"
+    """
+    data, meta, err = parse_request("advanced_search")
+    if err:
+        return err
+
+    try:
+        products = advanced_search(
+            keyword=data.get("keyword"),
+            category=data.get("category"),
+            min_price=data.get("min_price"),
+            max_price=data.get("max_price"),
+            in_stock=data.get("in_stock"),
+            color=data.get("color"),
+            material=data.get("material"),
+        )
+        return success_response(products, 200)
+    except Exception as e:
+        return error_response("SEARCH_FAILED", str(e), meta, 500)
