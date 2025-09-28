@@ -1,105 +1,259 @@
-swagger: '2.0'
 info:
   title: Access Backend API
   version: 1.0.0
-
-securityDefinitions:
-  Bearer:
-    type: apiKey
-    name: Authorization
-    in: header
-    description: "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'"
-
-security:
-  - Bearer: []
-
 paths:
   /auth/login:
     post:
-      summary: Login to get JWT token
-      tags:
-        - Auth
       parameters:
-        - in: body
-          name: credentials
-          required: true
-          schema:
-            type: object
-            required:
-              - username
-              - password
-            properties:
-              username:
-                type: string
-              password:
-                type: string
+      - in: body
+        name: credentials
+        required: true
+        schema:
+          properties:
+            password:
+              type: string
+            username:
+              type: string
+          required:
+          - username
+          - password
+          type: object
       responses:
         '200':
           description: JWT token returned
         '401':
           description: Unauthorized
-
+      summary: Login to get JWT token
+      tags:
+      - Auth
   /auth/logout_access:
     post:
-      summary: Logout (revoke access token)
-      tags:
-        - Auth
-      security:
-        - Bearer: []
       responses:
         '200':
           description: Logged out
-
+      security:
+      - Bearer: []
+      summary: Logout (revoke access token)
+      tags:
+      - Auth
   /auth/me:
     get:
-      summary: Get current user info
-      tags:
-        - Auth
-      security:
-        - Bearer: []
       responses:
         '200':
           description: User info returned
         '401':
-          description: Unauthorized or invalid token
+          description: Unauthorized
         '404':
           description: User not found
-
+      security:
+      - Bearer: []
+      summary: Get current user info
+      tags:
+      - Auth
   /auth/refresh:
     post:
-      summary: Refresh JWT token
-      tags:
-        - Auth
-      security:
-        - Bearer: []
       responses:
         '200':
           description: New token
-
+      security:
+      - Bearer: []
+      summary: Refresh JWT token
+      tags:
+      - Auth
   /auth/register:
     post:
-      summary: Register a new user
-      tags:
-        - Auth
       parameters:
-        - in: body
-          name: user
-          required: true
-          schema:
-            type: object
-            required:
-              - username
-              - email
-              - password
-            properties:
-              username:
-                type: string
-              email:
-                type: string
-              password:
-                type: string
+      - in: body
+        name: user
+        required: true
+        schema:
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+            username:
+              type: string
+          required:
+          - username
+          - email
+          - password
+          type: object
       responses:
         '201':
           description: User successfully registered
         '400':
-          description: Bad request, e.g., user exists or invalid data
+          description: Bad request
+      summary: Register a new user
+      tags:
+      - Auth
+  /orders:
+    get:
+      responses:
+        '200':
+          description: List of orders
+      security:
+      - Bearer: []
+      summary: List all orders
+      tags:
+      - Orders
+    post:
+      parameters:
+      - in: body
+        name: order
+        required: true
+        schema:
+          type: object
+      responses:
+        '201':
+          description: Order created
+        '400':
+          description: Invalid input
+      security:
+      - Bearer: []
+      summary: Create new order
+      tags:
+      - Orders
+  /orders/{order_id}:
+    delete:
+      parameters:
+      - in: path
+        name: order_id
+        required: true
+        type: string
+      responses:
+        '200':
+          description: Order deleted
+        '404':
+          description: Order not found
+      security:
+      - Bearer: []
+      summary: Delete order by ID
+      tags:
+      - Orders
+    get:
+      parameters:
+      - in: path
+        name: order_id
+        required: true
+        type: string
+      responses:
+        '200':
+          description: Order details
+        '404':
+          description: Order not found
+      security:
+      - Bearer: []
+      summary: Get order by ID
+      tags:
+      - Orders
+    put:
+      parameters:
+      - in: path
+        name: order_id
+        required: true
+        type: string
+      - in: body
+        name: order
+        required: true
+        schema:
+          type: object
+      responses:
+        '200':
+          description: Order updated
+        '404':
+          description: Order not found
+      security:
+      - Bearer: []
+      summary: Update order by ID
+      tags:
+      - Orders
+  /products:
+    get:
+      responses:
+        '200':
+          description: List of products
+      security:
+      - Bearer: []
+      summary: List all products
+      tags:
+      - Products
+    post:
+      parameters:
+      - in: body
+        name: product
+        required: true
+        schema:
+          type: object
+      responses:
+        '201':
+          description: Product created
+        '400':
+          description: Invalid input
+      security:
+      - Bearer: []
+      summary: Create new product
+      tags:
+      - Products
+  /products/{product_id}:
+    delete:
+      parameters:
+      - in: path
+        name: product_id
+        required: true
+        type: string
+      responses:
+        '200':
+          description: Product deleted
+        '404':
+          description: Product not found
+      security:
+      - Bearer: []
+      summary: Delete product by ID
+      tags:
+      - Products
+    get:
+      parameters:
+      - in: path
+        name: product_id
+        required: true
+        type: string
+      responses:
+        '200':
+          description: Product details
+        '404':
+          description: Product not found
+      security:
+      - Bearer: []
+      summary: Get product by ID
+      tags:
+      - Products
+    put:
+      parameters:
+      - in: path
+        name: product_id
+        required: true
+        type: string
+      - in: body
+        name: product
+        required: true
+        schema:
+          type: object
+      responses:
+        '200':
+          description: Product updated
+        '404':
+          description: Product not found
+      security:
+      - Bearer: []
+      summary: Update product by ID
+      tags:
+      - Products
+securityDefinitions:
+  Bearer:
+    description: 'JWT Authorization header using the Bearer scheme. Example: ''Bearer
+      {token}'''
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: '2.0'

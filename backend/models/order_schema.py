@@ -1,28 +1,22 @@
-"""
-Schemas for orders table.
-
-Columns:
-- id (Int, PK, Auto increment)
-- order_number (Str)
-- customer_name (Str)
-- product_id (Int, nullable)
-- quantity (Int, default 1)
-- unit_price (Float, nullable)
-- total_price (Float, computed if None)
-- order_date (DateTime in ISO string)
-- status (Str, default "NEW")
-"""
-
 from marshmallow import Schema, fields
+
+class OrderItemSchema(Schema):
+    product_id = fields.Int(required=True)     # Tham chiếu tới Product.id
+    product_name = fields.Str(dump_only=True)  # Tên sản phẩm (load từ Product)
+    price = fields.Float(required=True)        # Giá tại thời điểm đặt
+    quantity = fields.Int(required=True)       # Số lượng đặt
+    subtotal = fields.Float(dump_only=True)    # Thành tiền = price * quantity
 
 
 class OrderSchema(Schema):
-    id = fields.Int(dump_only=True)  # PK, Auto increment
-    order_number = fields.Str(required=True)
-    customer_name = fields.Str(required=True)
-    product_id = fields.Int(required=False, allow_none=True)
-    quantity = fields.Int(required=True)
-    unit_price = fields.Float(required=False, allow_none=True)
-    total_price = fields.Float(required=False, allow_none=True)
-    order_date = fields.DateTime(required=True)
-    status = fields.Str(required=True)
+    id = fields.Int(dump_only=True)                  # PK, tự tăng
+    customer_name = fields.Str(required=True)        # Tên khách hàng
+    customer_phone = fields.Str(required=True)       # SĐT khách hàng
+    customer_address = fields.Str(required=False)    # Địa chỉ giao hàng
+    items = fields.List(fields.Nested(OrderItemSchema), required=True)  # Danh sách sản phẩm trong đơn
+    total_amount = fields.Float(dump_only=True)      # Tổng số tiền (tính từ items)
+    status = fields.Str(required=True,
+                        validate=lambda x: x in ["pending", "confirmed", "shipped", "completed", "canceled"])
+    created_at = fields.DateTime(dump_only=True)     # Ngày đặt
+    updated_at = fields.DateTime(dump_only=True)     # Ngày cập nhật
+

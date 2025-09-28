@@ -1,92 +1,177 @@
 """
-DAO for orders table (assumes table 'orders' exists).
-Columns used: id, order_number, customer_name, product_id, quantity, unit_price, total_price, order_date, status
+DAO for order-related DB operations with multiple products.
+
+Tables used:
+- orders(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_number TEXT,
+    customer_name TEXT,
+    order_date TEXT,
+    status TEXT,
+    total_price REAL
+)
+
+- order_items(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER,
+    product_id INTEGER,
+    quantity INTEGER,
+    unit_price REAL,
+    total_price REAL
+)
 """
+
 from .connection import get_conn
 from datetime import datetime
 
-def fetch_all_orders():
-    """
-    Return list of all orders
-    """
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT id, order_number, customer_name, product_id, quantity, unit_price, total_price, order_date, status FROM orders")
-    cols = [c[0] for c in cur.description]
-    rows = [dict(zip(cols, r)) for r in cur.fetchall()]
-    cur.close(); conn.close()
-    return rows
 
-def fetch_order_by_id(order_id: int):
+def create_order(order_number: str, customer_name: str, status: str,
+                 items: list) -> int:
     """
-    Return order dict or None
-    """
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT id, order_number, customer_name, product_id, quantity, unit_price, total_price, order_date, status FROM orders WHERE id = ?", (order_id,))
-    row = cur.fetchone()
-    if not row:
-        cur.close(); conn.close(); return None
-    cols = [c[0] for c in cur.description]
-    res = dict(zip(cols, row))
-    cur.close(); conn.close()
-    return res
+    Insert a new order with multiple items.
 
-def create_order(order_number: str, customer_name: str, product_id: int = None, quantity: int = 1, unit_price: float = None, total_price: float = None, order_date: str = None, status: str = "NEW") -> int:
+    Args:
+        order_number (str): Order number
+        customer_name (str): Customer name
+        status (str): Order status
+        items (list[dict]): List of product items, each dict:
+            {
+                "product_id": int,
+                "quantity": int,
+                "unit_price": float
+            }
+
+    Returns:
+        int: new order id
     """
-    Insert new order. If total_price is None, compute from unit_price * quantity.
-    order_date: ISO string or None → stored as string/Access datetime depending driver.
-    Returns new order id.
-    """
-    if order_date is None:
-        order_date = datetime.utcnow().isoformat()
-    if total_price is None:
-        unit = unit_price or 0.0
-        total_price = unit * (quantity or 0)
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO orders (order_number, customer_name, product_id, quantity, unit_price, total_price, order_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (order_number, customer_name, product_id, quantity, unit_price, total_price, order_date, status)
-    )
+    order_date = datetime.utcnow().isoformat()
+
+    # Tính tổng giá đơn hàng
+    total_price = sum(i["quantity"] * i["unit_price"] for i in items)
+
+    # Thêm vào bảng orders
+    cur.execute("""
+        INSERT INTO orders (order_number, customer_name, order_date, status, total_price)
+        VALUES (?, ?, ?, ?, ?)
+    """, (order_number, customer_name, order_date, status, total_price))
     cur.execute("SELECT @@IDENTITY")
-    new_id = int(cur.fetchone()[0])
+    order_id = int(cur.fetchone()[0])
+
+    # Thêm từng sản phẩm vào order_items
+    for i in items:
+        qty = i["quantity"]
+        unit_price = i["unit_price"]
+        subtotal = qty * unit_price
+        cur.execute("""
+            INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+            VALUES (?, ?, ?, ?, ?)
+        """, (order_id, i["product_id"], qty, unit_price, subtotal))
+
     conn.commit()
     cur.close(); conn.close()
-    return new_id
+    return order_id
 
-def update_order(order_id: int, **kwargs) -> int:
-    """
-    Update order fields passed in kwargs. Returns affected rows count.
-    """
-    if not kwargs:
-        return 0
-    # if quantity/unit_price changed and no total_price, recompute
-    if ("quantity" in kwargs or "unit_price" in kwargs) and "total_price" not in kwargs:
-        cur_order = fetch_order_by_id(order_id)
-        if cur_order:
-            q = kwargs.get("quantity", cur_order.get("quantity") or 0)
-            u = kwargs.get("unit_price", cur_order.get("unit_price") or 0)
-            kwargs["total_price"] = (q or 0) * (u or 0)
-    updates = ", ".join([f"{k} = ?" for k in kwargs.keys()])
-    params = list(kwargs.values()) + [order_id]
-    conn = get_conn()
-    cur = conn.cursor()
-    sql = f"UPDATE orders SET {updates} WHERE id = ?"
-    cur.execute(sql, params)
-    affected = cur.rowcount
-    conn.commit()
-    cur.close(); conn.close()
-    return affected
 
-def delete_order(order_id: int) -> int:
+def get_order_by_id(order_id: int):
     """
-    Delete order by id. Return affected rows.
+    Retrieve order with all its items.
     """
     conn = get_conn()
     cur = conn.cursor()
+
+    # Lấy thông tin order
+    cur.execute("SELECT * FROM orders WHERE id = ?", (order_id,))
+    order_row = cur.fetchone()
+    if not order_row:
+        cur.close(); conn.close(); return None
+    order_cols = [c[0] for c in cur.description]
+    order_data = dict(zip(order_cols, order_row))
+
+    # Lấy danh sách items
+    cur.execute("SELECT * FROM order_items WHERE order_id = ?", (order_id,))
+    item_rows = cur.fetchall()
+    item_cols = [c[0] for c in cur.description]
+    items = [dict(zip(item_cols, r)) for r in item_rows]
+
+    order_data["items"] = items
+
+    cur.close(); conn.close()
+    return order_data
+
+
+def get_orders_by_customer(customer_name: str):
+    """
+    Retrieve all orders (with items) for a given customer.
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM orders WHERE customer_name = ?", (customer_name,))
+    order_ids = [row[0] for row in cur.fetchall()]
+    cur.close(); conn.close()
+
+    return [get_order_by_id(oid) for oid in order_ids]
+
+
+def update_order_status(order_id: int, new_status: str):
+    """
+    Update order status.
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
+    conn.commit()
+    cur.close(); conn.close()
+
+
+def add_item_to_order(order_id: int, product_id: int, quantity: int, unit_price: float):
+    """
+    Add new item to an existing order and update total_price.
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+    subtotal = quantity * unit_price
+
+    # Thêm item
+    cur.execute("""
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
+        VALUES (?, ?, ?, ?, ?)
+    """, (order_id, product_id, quantity, unit_price, subtotal))
+
+    # Cập nhật tổng giá đơn hàng
+    cur.execute("UPDATE orders SET total_price = total_price + ? WHERE id = ?", (subtotal, order_id))
+
+    conn.commit()
+    cur.close(); conn.close()
+
+def get_all_orders():
+    """
+    Retrieve all orders with their items.
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM orders ORDER BY order_date DESC")
+    order_ids = [row[0] for row in cur.fetchall()]
+    cur.close(); conn.close()
+    return [get_order_by_id(oid) for oid in order_ids]
+
+
+def delete_order(order_id: int) -> bool:
+    """
+    Delete an order and its items.
+    Returns True if deleted, False if not found.
+    """
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM orders WHERE id = ?", (order_id,))
+    if cur.fetchone()[0] == 0:
+        cur.close(); conn.close()
+        return False
+
+    cur.execute("DELETE FROM order_items WHERE order_id = ?", (order_id,))
     cur.execute("DELETE FROM orders WHERE id = ?", (order_id,))
-    affected = cur.rowcount
     conn.commit()
     cur.close(); conn.close()
-    return affected
+    return True
+

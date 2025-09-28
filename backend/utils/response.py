@@ -15,7 +15,7 @@ Error format:
   "meta": { "requestId": "...", "timestamp":py "..." }
 }
 """
-from flask import jsonify, g
+from flask import jsonify, g, request
 import time
 import uuid
 from datetime import datetime, timezone
@@ -69,3 +69,25 @@ def error_response(code: str, message: str, details=None, status_code=400):
         "meta": finish_meta(include_time=False)
     }
     return jsonify(payload), status_code
+
+# --- Helper để parse JSON request ---
+def parse_request(expected_action: str):
+    """
+    Parse request body theo format {action, data, meta}.
+    """
+    req = request.get_json(force=True) or {}
+
+    action = req.get("action")
+    if action != expected_action:
+        return None, None, (
+            jsonify({
+                "status": "error",
+                "error": {
+                    "code": "INVALID_ACTION",
+                    "message": f"Expected action '{expected_action}', got '{action}'"
+                },
+                "meta": req.get("meta", {})
+            }), 400
+        )
+
+    return req.get("data") or {}, req.get("meta") or {}, None

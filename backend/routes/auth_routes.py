@@ -63,7 +63,16 @@ def register():
       400:
         description: Missing fields or user exists
     """
-    data = request.get_json(force=True) or {}
+    # data = request.get_json(force=True) or {}
+    req = request.get_json(force=True) or {}
+
+    # Kiểm tra action
+    action = req.get("action")
+    if action != "register":
+        return error_response("INVALID_ACTION", "Expected action 'register'", None, 400)
+
+    # Lấy phần data (payload)
+    data = req.get("data") or {}
     username = data.get("username")
     password = data.get("password")
     email = data.get("email")
@@ -78,7 +87,20 @@ def register():
     user_id = dao_auth.create_user(username, pw_hash, email)
     return success_response({"userId": user_id}, 201)
 
-
+"""
+{
+	"action": "login",        // hoặc "order", "remove", "update", ...
+    "data": {
+        "username": "admin",
+        "password": "admin"
+    },
+    "meta": {                 // optional: thông tin thêm
+    "requestId": "abc123",
+    "timestamp": "2025-09-22T09:15:00Z",
+    "client": "web"
+    }
+}
+"""
 @auth_bp.route("/login", methods=["POST"])
 def login():
     """
@@ -107,7 +129,17 @@ def login():
         description: Invalid credentials
     """
     start_request()
-    data = request.get_json(force=True) or {}
+    req = request.get_json(force=True) or {}
+
+    # Kiểm tra action
+    action = req.get("action")
+    if action != "login":
+        return error_response("INVALID_ACTION", "Expected action 'login'", None, 400)
+
+    # Lấy phần data (payload)
+    data = req.get("data") or {}
+    # start_request()
+    # data = request.get_json(force=True) or {}
     username = data.get("username")
     password = data.get("password")
 

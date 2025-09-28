@@ -1,4 +1,3 @@
-# swagger/generate_auth_only.py
 import yaml, os
 from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -18,12 +17,12 @@ template = spec.to_dict()
 # Chỉ giữ swagger: "2.0", xóa openapi nếu có
 template.pop("openapi", None)
 template["swagger"] = "2.0"
-template.setdefault('paths', {})
+template.setdefault("paths", {})
 
 # ================================
 # JWT security
 # ================================
-template['securityDefinitions'] = {
+template["securityDefinitions"] = {
     "Bearer": {
         "type": "apiKey",
         "name": "Authorization",
@@ -79,7 +78,7 @@ auth_paths = {
             }],
             "responses": {
                 "201": {"description": "User successfully registered"},
-                "400": {"description": "Bad request, e.g., user exists or invalid data"}
+                "400": {"description": "Bad request"}
             }
         }
     },
@@ -105,7 +104,7 @@ auth_paths = {
             "tags": ["Auth"],
             "responses": {
                 "200": {"description": "User info returned"},
-                "401": {"description": "Unauthorized or invalid token"},
+                "401": {"description": "Unauthorized"},
                 "404": {"description": "User not found"}
             },
             "security": [{"Bearer": []}]
@@ -113,7 +112,180 @@ auth_paths = {
     }
 }
 
-template['paths'].update(auth_paths)
+# ================================
+# ORDERS ROUTES
+# ================================
+orders_paths = {
+    "/orders": {
+        "get": {
+            "summary": "List all orders",
+            "tags": ["Orders"],
+            "responses": {"200": {"description": "List of orders"}},
+            "security": [{"Bearer": []}]
+        },
+        "post": {
+            "summary": "Create new order",
+            "tags": ["Orders"],
+            "parameters": [{
+                "in": "body",
+                "name": "order",
+                "required": True,
+                "schema": {"type": "object"}
+            }],
+            "responses": {
+                "201": {"description": "Order created"},
+                "400": {"description": "Invalid input"}
+            },
+            "security": [{"Bearer": []}]
+        }
+    },
+    "/orders/{order_id}": {
+        "get": {
+            "summary": "Get order by ID",
+            "tags": ["Orders"],
+            "parameters": [{
+                "in": "path",
+                "name": "order_id",
+                "type": "string",
+                "required": True
+            }],
+            "responses": {
+                "200": {"description": "Order details"},
+                "404": {"description": "Order not found"}
+            },
+            "security": [{"Bearer": []}]
+        },
+        "put": {
+            "summary": "Update order by ID",
+            "tags": ["Orders"],
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "order_id",
+                    "type": "string",
+                    "required": True
+                },
+                {
+                    "in": "body",
+                    "name": "order",
+                    "required": True,
+                    "schema": {"type": "object"}
+                }
+            ],
+            "responses": {
+                "200": {"description": "Order updated"},
+                "404": {"description": "Order not found"}
+            },
+            "security": [{"Bearer": []}]
+        },
+        "delete": {
+            "summary": "Delete order by ID",
+            "tags": ["Orders"],
+            "parameters": [{
+                "in": "path",
+                "name": "order_id",
+                "type": "string",
+                "required": True
+            }],
+            "responses": {
+                "200": {"description": "Order deleted"},
+                "404": {"description": "Order not found"}
+            },
+            "security": [{"Bearer": []}]
+        }
+    }
+}
+
+# ================================
+# PRODUCTS ROUTES
+# ================================
+products_paths = {
+    "/products": {
+        "get": {
+            "summary": "List all products",
+            "tags": ["Products"],
+            "responses": {"200": {"description": "List of products"}},
+            "security": [{"Bearer": []}]
+        },
+        "post": {
+            "summary": "Create new product",
+            "tags": ["Products"],
+            "parameters": [{
+                "in": "body",
+                "name": "product",
+                "required": True,
+                "schema": {"type": "object"}
+            }],
+            "responses": {
+                "201": {"description": "Product created"},
+                "400": {"description": "Invalid input"}
+            },
+            "security": [{"Bearer": []}]
+        }
+    },
+    "/products/{product_id}": {
+        "get": {
+            "summary": "Get product by ID",
+            "tags": ["Products"],
+            "parameters": [{
+                "in": "path",
+                "name": "product_id",
+                "type": "string",
+                "required": True
+            }],
+            "responses": {
+                "200": {"description": "Product details"},
+                "404": {"description": "Product not found"}
+            },
+            "security": [{"Bearer": []}]
+        },
+        "put": {
+            "summary": "Update product by ID",
+            "tags": ["Products"],
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "product_id",
+                    "type": "string",
+                    "required": True
+                },
+                {
+                    "in": "body",
+                    "name": "product",
+                    "required": True,
+                    "schema": {"type": "object"}
+                }
+            ],
+            "responses": {
+                "200": {"description": "Product updated"},
+                "404": {"description": "Product not found"}
+            },
+            "security": [{"Bearer": []}]
+        },
+        "delete": {
+            "summary": "Delete product by ID",
+            "tags": ["Products"],
+            "parameters": [{
+                "in": "path",
+                "name": "product_id",
+                "type": "string",
+                "required": True
+            }],
+            "responses": {
+                "200": {"description": "Product deleted"},
+                "404": {"description": "Product not found"}
+            },
+            "security": [{"Bearer": []}]
+        }
+    }
+}
+
+# ================================
+# Gộp tất cả paths
+# ================================
+template["paths"].update(auth_paths)
+template["paths"].update(orders_paths)
+template["paths"].update(products_paths)
 
 # ================================
 # Ghi ra file swagger_generated.yaml
@@ -124,4 +296,4 @@ with open(out, "w", encoding="utf-8") as f:
     yaml.safe_dump(template, f, allow_unicode=True, default_flow_style=False)
 
 print("Wrote", out)
-print("Available routes:", list(template['paths'].keys()))
+print("Available routes:", list(template["paths"].keys()))
